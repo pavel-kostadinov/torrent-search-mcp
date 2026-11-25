@@ -52,6 +52,7 @@ uvx torrent-search-mcp --mode fastapi
     - [Install from PyPI (Recommended)](#install-from-pypi-recommended)
     - [For Local Development](#for-local-development)
     - [For Docker](#for-docker)
+    - [On a Synology NAS](#on-a-synology-nas)
 - [Usage](#usage)
   - [As CLI](#as-cli)
   - [As Python Wrapper](#as-python-wrapper)
@@ -213,6 +214,22 @@ docker compose up --build -d
 docker logs torrent-search-api -f
 docker logs torrent-search-mcp -f
 ```
+
+#### On a Synology NAS
+
+`deploy/synology/` runs the web UI as one container in Container Manager, connected to Download Station:
+
+- a **Download on NAS** button on every result that queues the magnet link in Download Station;
+- a **Downloads** view with live progress, pause/resume, and remove (optionally deleting the files);
+- the downloaded files on the NAS, with permanent delete.
+
+1. Build the image for the NAS CPU on your computer: `./deploy/synology/build-image.sh` (Intel/AMD) or `PLATFORM=linux/arm64 ./deploy/synology/build-image.sh`.
+2. Copy `deploy/synology/compose.yaml`, a filled-in `.env` (from `deploy/synology/.env.example`) and the tarball from `dist/` to a NAS folder such as `/volume1/docker/torrent-search`.
+3. Container Manager → Image → Add → Add from file (the tarball), then Project → Create from that folder.
+
+Use a dedicated DSM user with Download Station access only and no 2-factor authentication.
+
+To ship updates later, run `./deploy/synology/redeploy.sh`: it runs the tests, builds the image, copies it to the NAS over SSH and restarts the container (set `NAS_SSH=user@nas-ip` in `deploy/synology/.env`; the NAS asks for your password once, for `sudo`).
 
 ## Usage
 

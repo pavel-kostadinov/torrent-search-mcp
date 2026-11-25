@@ -52,6 +52,15 @@ def test_install_playwright_drivers_as_root(monkeypatch: Any, capsys: Any) -> No
     assert "--with-deps" in seen["command"]
 
 
+def test_install_playwright_drivers_skipped_in_docker(monkeypatch: Any) -> None:
+    def fail(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("install should be skipped")
+
+    monkeypatch.setenv("TORRENT_SEARCH_SKIP_BROWSER_INSTALL", "1")
+    monkeypatch.setattr(main_mod.subprocess, "run", fail)
+    main_mod.install_playwright_drivers()
+
+
 def test_cli_mode(monkeypatch: Any, capsys: Any) -> None:
     class FakeApi:
         async def cli(self, query: str | None) -> None:

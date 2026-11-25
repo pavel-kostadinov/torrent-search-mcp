@@ -2,7 +2,7 @@ import argparse
 import subprocess
 import sys
 from contextlib import suppress
-from os import geteuid
+from os import getenv, geteuid
 
 import uvicorn
 from playwright._impl._driver import compute_driver_executable, get_driver_env
@@ -11,6 +11,14 @@ from .mcp_server import mcp
 
 
 def install_playwright_drivers() -> None:
+    # Docker images bake the browser in at build time; skip the slow
+    # (and network-dependent) install at every container start.
+    if getenv("TORRENT_SEARCH_SKIP_BROWSER_INSTALL", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }:
+        return
     with suppress(Exception):
         driver_executable, driver_cli = compute_driver_executable()
         playwright_command = [driver_executable, driver_cli, "install"]
