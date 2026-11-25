@@ -40,6 +40,8 @@ def test_webui_served_at_root(client: TestClient) -> None:
     assert response.headers["content-type"].startswith("text/html")
     assert "Torrent Search" in response.text
     assert "__TELEGRAM_BOT_HANDLE__" not in response.text
+    assert "__SYNOLOGY_ENABLED__" not in response.text
+    assert "__LIBRARY_ENABLED__" not in response.text
 
 
 def test_static_telegram_icon(client: TestClient) -> None:

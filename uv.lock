@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -4580,6 +4580,7 @@ dependencies = [
     { name = "crawl4ai" },
     { name = "fastapi" },
     { name = "fastmcp" },
+    { name = "httpx" },
     { name = "minify-html" },
     { name = "pybase62" },
 ]
@@ -4600,6 +4601,7 @@ requires-dist = [
     { name = "crawl4ai" },
     { name = "fastapi" },
     { name = "fastmcp", specifier = ">=3,<4" },
+    { name = "httpx" },
     { name = "minify-html" },
     { name = "pybase62" },
 ]

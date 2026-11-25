@@ -11,6 +11,7 @@ dependencies = [
     "aiocache",
     "fastmcp>=3,<4",
     "fastapi",
+    "httpx",
     "pybase62",
     "minify-html"
 ]

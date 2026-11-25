@@ -4,188 +4,368 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Torrent Search</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>" />
-    <script data-key="oat.min.js" data-src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
-    <link rel="stylesheet" data-key="oat.min.css" data-src="https://unpkg.com/@knadh/oat/oat.min.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2210%22 fill=%22none%22 stroke=%22%235f7a6a%22 stroke-width=%223%22/></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
+      /* ---- Tokens: warm paper, charcoal ink, muted sage accent ------------- */
       :root {
-        /* Cyberpunk accent + swarm health colors - defined once, flip with the theme */
-        --accent: light-dark(#00a97f, #00ffa3);
-        --accent-dim: light-dark(#00a97f40, #00ffa340);
-        --up: light-dark(#0c8a4d, #2ee56b);
-        --down: light-dark(#c2373c, #ff6169);
+        color-scheme: light;
+        --bg: #f6f4ef;
+        --surface: #fbfaf7;
+        --ink: #2b2a27;
+        --ink-soft: #6f6c66;
+        --ink-faint: #a29e96;
+        --line: #e4e0d8;
+        --line-strong: #d3cec4;
+        --accent: #5f7a6a; /* sage */
+        --accent-soft: #e5ebe6;
+        --hover: #efece6;
+        --up: #4f7a5e;
+        --down: #b0614f; /* clay */
+        --radius: 6px;
+        --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      }
+      body[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #1c1c1a;
+        --surface: #232321;
+        --ink: #ece9e3;
+        --ink-soft: #a9a59d;
+        --ink-faint: #75726b;
+        --line: #33322f;
+        --line-strong: #44423e;
+        --accent: #9bb7a5;
+        --accent-soft: #2b3430;
+        --hover: #2a2a27;
+        --up: #93bf9f;
+        --down: #d99a87;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
       }
       html,
       body {
         margin: 0;
-        padding: 0;
         height: 100%;
         height: 100dvh;
         overflow: hidden; /* the results table is the only scroller */
       }
       body {
-        font-family: "Cascadia Mono", "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         display: flex;
         flex-direction: column;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font);
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        transition: background-color 0.2s, color 0.2s;
       }
-      body[data-theme="dark"] {
-        color-scheme: dark;
-        /* Softer palette: deep slate, not pure black */
-        --background: #151821;
-        --card: #1c2029;
-        --secondary: #262b38;
-        --muted: #262b38;
-        --faint: #20242f;
-        --border: #2e3442;
-        --input: #2e3442;
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
       }
-      body[data-theme="light"] {
-        color-scheme: light;
-        /* Softer palette: soft gray, not pure white */
-        --background: #eef0f4;
-        --card: #f7f8fa;
-        --secondary: #e3e6ec;
-        --muted: #e3e6ec;
-        --faint: #f1f3f6;
-        --border: #ccd2dc;
-        --input: #ccd2dc;
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
-      /* Subtle CRT scanlines */
-      body::after {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.05) 2px 4px);
-        z-index: 400;
-      }
-      #theme-toggle {
-        width: 2rem;
-        min-width: 2rem;
-        height: 2rem;
-        padding: 0;
-        border-radius: var(--radius-medium);
-        font-size: 0.85rem;
-      }
-      body[data-theme="dark"] #theme-toggle {
-        --_hov: #68b9ef;
-        color: #ffffff;
-        background-color: #4298d4;
-        border-color: #78c7f7;
-      }
-      body[data-theme="light"] #theme-toggle {
-        --_hov: #263555;
-        color: #f7df72;
-        background-color: #18233d;
-        border-color: #34466f;
-      }
+
       main.container {
         flex: 1;
         min-height: 0;
         display: flex;
         flex-direction: column;
         width: 100%;
-        max-width: none; /* always full width - no side gutters */
-        margin-inline: 0;
-        padding: var(--space-4) var(--space-4) var(--space-3);
-        box-sizing: border-box;
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 3rem 2rem 1.25rem;
+      }
+
+      /* ---- Header ---------------------------------------------------------- */
+      .masthead {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 2rem;
       }
       h1 {
-        display: flex;
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      h1 .dot {
+        display: inline-block;
+        width: 0.5rem;
+        height: 0.5rem;
+        margin-left: 0.15rem;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      .tagline {
+        margin: 0.25rem 0 0;
+        color: var(--ink-soft);
+        font-size: 0.875rem;
+      }
+      #theme-toggle {
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
-        width: 100%;
-        font-size: var(--text-2);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin: 0 0 var(--space-2);
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
       }
-      /* Toolbar: every control on one baseline, identical heights */
+      #theme-toggle:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+      #theme-toggle svg {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      /* ---- Toolbar --------------------------------------------------------- */
       #toolbar {
-        --compact-control-width: 7.5rem;
         display: grid;
-        grid-template-columns: minmax(14rem, 1fr) repeat(3, var(--compact-control-width));
-        gap: var(--space-3);
-        align-items: end;
-        margin-bottom: var(--space-3);
+        grid-template-columns: minmax(12rem, 1fr) 6.5rem auto auto;
+        gap: 0.5rem;
+        margin-bottom: 1.75rem;
       }
-      #toolbar label[data-field] {
-        margin: 0;
+      .field {
+        position: relative;
+        display: block;
       }
-      #toolbar label[data-field]:nth-child(2),
-      #toolbar button {
-        width: var(--compact-control-width);
-        min-width: var(--compact-control-width);
-      }
-      #toolbar label[data-field] input,
-      #toolbar label[data-field] select {
-        height: 2.6rem;
+      .field svg {
+        position: absolute;
+        left: 0.9rem;
+        top: 50%;
+        width: 1rem;
+        height: 1rem;
+        transform: translateY(-50%);
+        color: var(--ink-faint);
+        pointer-events: none;
       }
       #query,
       #limit {
         width: 100%;
+        height: 2.75rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        transition: border-color 0.15s;
       }
-      #toolbar button {
-        height: 2.6rem;
-        padding-block: 0;
+      #query {
+        padding: 0 1rem 0 2.5rem;
+      }
+      #query::placeholder {
+        color: var(--ink-faint);
+      }
+      #limit {
+        padding: 0 0.75rem;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23a29e96' stroke-width='1.5'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.6rem center;
+        background-size: 1rem;
+        cursor: pointer;
+      }
+      #query:hover,
+      #limit:hover {
+        border-color: var(--line-strong);
+      }
+      #query:focus,
+      #limit:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        height: 2.75rem;
+        padding: 0 1.25rem;
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        font-weight: 500;
         white-space: nowrap;
-        box-sizing: border-box;
+        cursor: pointer;
+        transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
       }
-      #btn-search:hover,
-      #btn-popular:hover {
-        box-shadow: 0 0 0.6rem var(--accent-dim);
+      .btn-primary {
+        background: var(--ink);
+        color: var(--bg);
       }
+      .btn-primary:hover:not(:disabled) {
+        background: var(--accent);
+      }
+      .btn-ghost {
+        background: transparent;
+        border-color: var(--line);
+      }
+      .btn-ghost:hover:not(:disabled) {
+        border-color: var(--line-strong);
+        background: var(--hover);
+      }
+      .btn:disabled {
+        cursor: progress;
+        opacity: 0.55;
+      }
+      .btn[aria-busy="true"] {
+        opacity: 1;
+      }
+
+      /* ---- Spinners -------------------------------------------------------- */
+      .spinner {
+        display: inline-block;
+        flex: none;
+        width: 1em;
+        height: 1em;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      .spinner.lg {
+        width: 2rem;
+        height: 2rem;
+        border-width: 2px;
+        color: var(--accent);
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* Indeterminate progress hairline across the top of the results */
+      .progress {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 2px;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .progress::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 35%;
+        background: var(--accent);
+        animation: slide 1.2s ease-in-out infinite;
+      }
+      @keyframes slide {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(300%);
+        }
+      }
+      #results-card[aria-busy="true"] .progress {
+        opacity: 1;
+      }
+      /* Centered loading panel over the skeleton rows */
+      .loading-overlay {
+        position: absolute;
+        inset: 2.5rem 0 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.9rem;
+        color: var(--ink-soft);
+        font-size: 0.875rem;
+        background: linear-gradient(to bottom, transparent, var(--surface) 40%);
+        pointer-events: none;
+        z-index: 5;
+      }
+      #results-card[aria-busy="true"] .loading-overlay {
+        display: flex;
+      }
+      .skeleton {
+        display: block;
+        height: 0.7rem;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--hover) 0%, var(--line) 50%, var(--hover) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.4s ease-in-out infinite;
+      }
+      @keyframes shimmer {
+        from {
+          background-position: 100% 0;
+        }
+        to {
+          background-position: -100% 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner,
+        .skeleton,
+        .progress::before {
+          animation-duration: 2.4s;
+        }
+      }
+
+      /* ---- Results --------------------------------------------------------- */
       #results-card {
+        position: relative;
         flex: 1;
         min-height: 0;
         display: flex;
         flex-direction: column;
-        padding: 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
         overflow: hidden;
-        border: none;
-        border-radius: 0;
       }
       #results-card > header {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        padding: var(--space-3) var(--space-4);
-        border-bottom: 1px solid var(--border);
-      }
-      .term-dots {
-        display: flex;
-        gap: 0.4rem;
-      }
-      .term-dots span {
-        width: 0.7rem;
-        height: 0.7rem;
-        border-radius: 50%;
-        background: var(--border);
-      }
-      .term-dots span:nth-child(1) {
-        background: light-dark(#e06c75, #ff5f56);
-      }
-      .term-dots span:nth-child(2) {
-        background: light-dark(#e5c07b, #ffbd2e);
-      }
-      .term-dots span:nth-child(3) {
-        background: light-dark(#98c379, #27c93f);
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--line);
       }
       #status-line {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: var(--space-3);
+        gap: 1rem;
         flex-wrap: wrap;
-        flex: 1;
-        min-width: 0;
+        min-height: 1.5rem;
       }
-      #summary::before {
-        content: "❯ ";
+      #summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 500;
+      }
+      #summary .spinner {
+        width: 0.9rem;
+        height: 0.9rem;
         color: var(--accent);
       }
-      /* The one and only scroller */
+      #summary.error-text {
+        color: var(--down);
+      }
+      #sort-hint {
+        color: var(--ink-soft);
+        font-size: 0.8125rem;
+      }
       .table {
         flex: 1;
         min-height: 0;
@@ -193,14 +373,14 @@
       }
       #results {
         width: 100%;
-        min-width: 50.5rem;
+        min-width: 50rem;
         table-layout: fixed;
+        border-collapse: collapse;
       }
       #results th,
       #results td {
         text-align: left;
-        padding: 0.35rem var(--space-3);
-        line-height: 1.2;
+        padding: 0.7rem 1.25rem;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -208,35 +388,46 @@
       #results thead th {
         position: sticky;
         top: 0;
-        background: var(--background);
         z-index: 10;
-        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+        color: var(--ink-soft);
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
       col.c-name {
         width: auto;
       }
       col.c-size {
-        width: 6.5rem;
+        width: 7.5rem;
       }
       col.c-num {
-        width: 4.5rem;
+        width: 6rem;
       }
       col.c-date {
-        width: 8rem;
+        width: 8.5rem;
       }
       col.c-actions {
-        width: 7rem;
+        width: 6rem;
       }
       th.sortable {
         cursor: pointer;
         user-select: none;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        transition: color 0.15s;
+      }
+      th.sortable:hover {
+        color: var(--ink);
       }
       th.sortable::after {
         content: "↕";
-        opacity: 0.35;
+        opacity: 0;
         margin-left: 0.3em;
+        transition: opacity 0.15s;
+      }
+      th.sortable:hover::after {
+        opacity: 0.4;
       }
       th.sortable[data-dir="asc"]::after {
         content: "↑";
@@ -248,71 +439,47 @@
         opacity: 1;
         color: var(--accent);
       }
+      th.sortable[data-dir] {
+        color: var(--ink);
+      }
       tbody tr {
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--line);
+        transition: background-color 0.12s;
+      }
+      tbody tr:last-child {
+        border-bottom: none;
       }
       tbody tr:hover {
-        background: var(--accent-dim);
+        background: var(--hover);
       }
       td.num,
-      th.c-num,
-      #results th:nth-child(2),
-      #results td:nth-child(2),
-      #results th:last-child,
-      td.actions-cell {
+      #results th:nth-child(n + 3),
+      #results td:nth-child(n + 3) {
         text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      #results td:nth-child(2) {
+        color: var(--ink-soft);
         font-variant-numeric: tabular-nums;
       }
       td.se {
         color: var(--up);
+        font-weight: 500;
       }
       td.le {
-        color: var(--down);
-      }
-      td.actions-cell a,
-      td.actions-cell button,
-      td.actions-cell > span {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.75rem;
-        height: 1.75rem;
-        padding: 0;
-        text-decoration: none;
-        vertical-align: middle;
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 1rem;
-      }
-      td.actions-cell img {
-        width: 1rem;
-        height: 1rem;
-      }
-      td.actions-cell a:hover,
-      td.actions-cell button:hover:not(:disabled) {
-        filter: drop-shadow(0 0 0.35rem var(--accent));
-      }
-      td.actions-cell button:disabled,
-      td.actions-cell > span {
-        opacity: 0.3;
-        cursor: not-allowed;
-      }
-      #summary.error-text {
-        color: var(--down);
+        color: var(--ink-soft);
       }
       td.name-cell {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
-        overflow: visible;
+        gap: 0.4rem;
       }
       td.name-cell .filename-details {
         flex: 1;
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.1rem;
+        gap: 0.15rem;
         overflow: hidden;
       }
       td.name-cell .filename,
@@ -320,327 +487,630 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      td.name-cell .filename {
+        font-weight: 500;
+      }
       td.name-cell .torrent-detail {
         display: flex;
         min-width: 0;
-        font-size: 0.65rem;
-        line-height: 1;
-        opacity: 0.55;
-      }
-      td.name-cell .torrent-source {
-        min-width: 0;
+        color: var(--ink-faint);
+        font-size: 0.75rem;
+        line-height: 1.2;
       }
       td.name-cell .torrent-category {
         flex: none;
       }
       .info-btn {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.25rem;
+        height: 1.25rem;
+        padding: 0;
         background: none;
-        border: none;
+        border: 1px solid var(--line-strong);
+        border-radius: 50%;
+        color: var(--ink-faint);
         cursor: pointer;
-        padding: 0 0.25rem 0 0;
-        opacity: 0.55;
-        font-size: 0.85rem;
+        font-family: Georgia, serif;
+        font-size: 0.7rem;
+        font-style: italic;
+        line-height: 1;
       }
       .info-btn:hover,
       .info-btn.tooltip-open {
+        color: var(--ink);
+        background: var(--line);
+      }
+      td.actions-cell a,
+      td.actions-cell button,
+      td.actions-cell > span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        margin-left: 0.15rem;
+        vertical-align: middle;
+        background: none;
+        border: none;
+        border-radius: var(--radius);
+        color: var(--ink-soft);
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.12s, color 0.12s;
+      }
+      td.actions-cell svg,
+      td.actions-cell img {
+        width: 1rem;
+        height: 1rem;
+      }
+      td.actions-cell a:hover,
+      td.actions-cell button:hover:not(:disabled) {
+        color: var(--ink);
+        background: var(--line);
+      }
+      td.actions-cell button:disabled,
+      td.actions-cell > span {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      td.actions-cell button[data-nas] {
+        color: var(--accent);
+      }
+      td.actions-cell button[data-nas]:hover:not(:disabled) {
+        color: var(--bg);
+        background: var(--accent);
+      }
+      td.actions-cell button[data-nas][aria-busy="true"] {
+        cursor: progress;
+        opacity: 1;
+        background: var(--accent-soft);
+      }
+      td.actions-cell button[data-nas].done {
+        color: var(--up);
+        background: var(--accent-soft);
+        opacity: 1;
+        cursor: default;
+      }
+      td.actions-cell button[data-nas] .spinner {
+        width: 0.9rem;
+        height: 0.9rem;
+      }
+      td.actions-cell img {
+        filter: grayscale(1);
+        opacity: 0.7;
+        transition: filter 0.12s, opacity 0.12s;
+      }
+      td.actions-cell a:hover img {
+        filter: none;
         opacity: 1;
       }
+      .empty-row td {
+        padding: 4rem 1rem !important;
+        text-align: center !important;
+        color: var(--ink-soft);
+      }
+
+      /* ---- Tooltip --------------------------------------------------------- */
       #filename-tooltip {
         position: fixed;
         z-index: 600;
         width: fit-content;
-        max-width: min(40rem, calc(100vw - 2rem));
-        max-height: calc(100vh - 2rem);
+        max-width: min(36rem, calc(100vw - 2rem));
         max-height: calc(100dvh - 2rem);
-        padding: var(--space-2) var(--space-3);
-        color: var(--foreground);
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-large);
-        box-shadow: var(--shadow-large);
-        font-size: 0.65rem;
-        line-height: 1.35;
-        text-align: left;
-        white-space: normal;
+        padding: 0.6rem 0.8rem;
+        color: var(--bg);
+        background: var(--ink);
+        border-radius: var(--radius);
+        font-size: 0.8125rem;
+        line-height: 1.45;
         overflow: auto;
         overflow-wrap: anywhere;
-        word-break: break-word;
         pointer-events: none;
       }
-      /* Send-to-Telegram confirm popup */
+
+      /* ---- Toast ----------------------------------------------------------- */
+      #toasts {
+        position: fixed;
+        left: 50%;
+        bottom: 1.5rem;
+        z-index: 700;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        transform: translateX(-50%);
+        pointer-events: none;
+      }
+      .toast {
+        padding: 0.6rem 1rem;
+        background: var(--ink);
+        color: var(--bg);
+        border-radius: 999px;
+        font-size: 0.8125rem;
+        animation: toast-in 0.2s ease-out;
+      }
+      .toast.error {
+        background: var(--down);
+        color: #fff;
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateY(0.5rem);
+        }
+      }
+
+      /* ---- Telegram dialog ------------------------------------------------- */
       #tg-dialog {
-        --tg-pad: var(--space-4);
-        width: min(24rem, calc(100vw - 2rem));
-        padding: 0;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-large);
-        box-shadow: var(--shadow-large);
-        overflow: hidden;
-        font-size: 0.75rem;
+        width: min(26rem, calc(100vw - 2rem));
+        padding: 1.75rem;
+        background: var(--surface);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 12px;
       }
       #tg-dialog::backdrop {
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(3px);
-      }
-      #tg-dialog .tg-body {
-        padding: var(--tg-pad);
-      }
-      #tg-dialog .tg-body::before {
-        content: "";
-        display: block;
-        height: 2px;
-        margin: calc(-1 * var(--tg-pad)) calc(-1 * var(--tg-pad)) var(--space-3);
-        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        background: rgba(28, 28, 26, 0.35);
+        backdrop-filter: blur(4px);
       }
       #tg-dialog h2 {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin: 0 0 var(--space-2);
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+        gap: 0.6rem;
+        margin: 0 0 0.4rem;
+        font-size: 1.05rem;
+        font-weight: 500;
       }
-      #tg-dialog h2 .tg-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex: none;
-        width: 1.5rem;
-        height: 1.5rem;
-        background: var(--accent-dim);
-        border-radius: var(--radius-medium);
-      }
-      #tg-dialog h2 .tg-badge img {
-        width: 0.9rem;
-        height: 0.9rem;
+      #tg-dialog h2 img {
+        width: 1.25rem;
+        height: 1.25rem;
       }
       #tg-dialog .tg-bot {
-        margin: 0 0 var(--space-3);
-        opacity: 0.65;
+        margin: 0 0 1.25rem;
+        color: var(--ink-soft);
+        font-size: 0.875rem;
       }
       #tg-dialog .tg-bot strong {
-        color: var(--accent);
+        color: var(--ink);
+        font-weight: 500;
       }
       #tg-dialog .tg-payload {
         margin: 0;
-        padding: var(--space-2) var(--space-3);
-        max-height: 6rem;
+        padding: 0.75rem 0.9rem;
+        max-height: 7rem;
         overflow: auto;
-        background: var(--faint);
-        border: 1px solid var(--border);
-        border-left: 2px solid var(--accent);
-        border-radius: var(--radius-medium);
-        font-family: inherit;
-        font-size: 0.62rem;
-        line-height: 1.45;
+        background: var(--bg);
+        border-radius: var(--radius);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: var(--ink-soft);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-        word-break: break-word;
-        opacity: 0.85;
         user-select: all;
       }
       #tg-dialog .tg-actions {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 0.45rem;
-        margin-top: var(--space-3);
+        gap: 0.5rem;
+        margin-top: 1.5rem;
       }
-      #tg-dialog .tg-actions button {
-        height: 1.9rem;
-        min-height: 1.9rem;
-        padding-inline: 0.7rem;
-        font-size: 0.68rem;
-        border-radius: var(--radius-medium);
+      #tg-dialog .tg-actions .btn {
+        height: 2.4rem;
+        padding: 0 1rem;
+        font-size: 0.875rem;
       }
       #tg-dialog .tg-actions .spacer {
         flex: 1;
       }
       #tg-dialog .tg-hint {
         display: none;
-        margin: var(--space-2) 0 0;
-        font-size: 0.65rem;
+        margin: 0.75rem 0 0;
+        font-size: 0.8125rem;
         color: var(--down);
       }
       #tg-dialog .tg-hint.visible {
         display: block;
       }
-      /* Page footer */
+
+      /* ---- View switch ----------------------------------------------------- */
+      .masthead-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .segmented {
+        display: inline-flex;
+        padding: 3px;
+        background: var(--hover);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .segmented button {
+        padding: 0.35rem 0.95rem;
+        background: none;
+        border: none;
+        border-radius: 999px;
+        color: var(--ink-soft);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .segmented button[aria-pressed="true"] {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--line);
+      }
+      body[data-view="downloads"] #toolbar,
+      body[data-view="downloads"] #results-card,
+      body[data-view="search"] #downloads-view {
+        display: none;
+      }
+
+      /* ---- Downloads view -------------------------------------------------- */
+      #downloads-view {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+      .panel > header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.9rem 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .panel > header h2 {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+      .panel > header small {
+        color: var(--ink-soft);
+        font-size: 0.8125rem;
+      }
+      .panel-head-left {
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+        min-width: 0;
+      }
+      .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        flex: none;
+        background: none;
+        border: none;
+        border-radius: var(--radius);
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: background-color 0.12s, color 0.12s;
+      }
+      .icon-btn:hover:not(:disabled) {
+        color: var(--ink);
+        background: var(--line);
+      }
+      .icon-btn:disabled {
+        cursor: progress;
+      }
+      .icon-btn.danger:hover:not(:disabled) {
+        color: var(--down);
+      }
+      .icon-btn svg {
+        width: 1rem;
+        height: 1rem;
+      }
+      .icon-btn .spinner {
+        width: 0.9rem;
+        height: 0.9rem;
+      }
+      .list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .list > li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .list > li:last-child {
+        border-bottom: none;
+      }
+      .list .empty,
+      .list .loading-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 2.5rem 1rem;
+        color: var(--ink-soft);
+      }
+      .list .loading-row .spinner {
+        color: var(--accent);
+      }
+      .item-main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-width: 0;
+      }
+      .item-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+        font-weight: 500;
+      }
+      .item-title > span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .item-title svg {
+        flex: none;
+        width: 1rem;
+        height: 1rem;
+        color: var(--ink-faint);
+      }
+      .item-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 1rem;
+        color: var(--ink-soft);
+        font-size: 0.8125rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .item-actions {
+        display: flex;
+        gap: 0.15rem;
+      }
+      .pill {
+        flex: none;
+        padding: 0.05rem 0.55rem;
+        border-radius: 999px;
+        background: var(--hover);
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+      }
+      .pill.downloading {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .pill.seeding,
+      .pill.finished {
+        background: var(--accent-soft);
+        color: var(--up);
+      }
+      .pill.error {
+        background: color-mix(in srgb, var(--down) 15%, transparent);
+        color: var(--down);
+      }
+      .meter {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--line);
+        overflow: hidden;
+      }
+      .meter > span {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+        transition: width 0.4s ease;
+      }
+      .meter.done > span {
+        background: var(--up);
+      }
+      .nas-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--down) 12%, transparent);
+        color: var(--down);
+        font-size: 0.875rem;
+      }
+
+      /* ---- Confirm dialog -------------------------------------------------- */
+      #confirm-dialog {
+        width: min(28rem, calc(100vw - 2rem));
+        padding: 1.75rem;
+        background: var(--surface);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      #confirm-dialog::backdrop {
+        background: rgba(28, 28, 26, 0.35);
+        backdrop-filter: blur(4px);
+      }
+      #confirm-dialog h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.05rem;
+        font-weight: 500;
+      }
+      #confirm-dialog p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.875rem;
+        overflow-wrap: anywhere;
+      }
+      #confirm-dialog .confirm-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+      }
+      #confirm-dialog .btn {
+        height: 2.4rem;
+        padding: 0 1rem;
+        font-size: 0.875rem;
+      }
+      .btn-danger {
+        background: var(--down);
+        color: #fff;
+      }
+      .btn-danger:hover:not(:disabled) {
+        filter: brightness(1.08);
+      }
+
+      /* ---- Footer ---------------------------------------------------------- */
       #page-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: var(--space-3);
-        margin-top: auto;
-        padding-top: var(--space-2);
-        font-size: 0.62rem;
-        opacity: 0.55;
-      }
-      #page-footer .foot-left {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
+        gap: 1rem;
+        padding-top: 1.25rem;
+        color: var(--ink-faint);
+        font-size: 0.8125rem;
       }
       #page-footer a {
         display: inline-flex;
-        align-items: center;
         color: inherit;
+        transition: color 0.15s;
       }
       #page-footer a:hover {
-        color: var(--accent);
-        opacity: 1;
+        color: var(--ink);
       }
       #page-footer svg {
-        width: 0.9rem;
-        height: 0.9rem;
+        width: 1rem;
+        height: 1rem;
       }
-      /* Small screens: shrink everything, stack the toolbar */
 
+      /* ---- Small screens --------------------------------------------------- */
       @media (max-width: 640px) {
-        html {
-          font-size: 14px;
-        }
-        body::after {
-          display: none;
+        body {
+          font-size: 13px;
         }
         main.container {
-          padding: 0.5rem;
+          padding: 1.25rem 1rem 0.75rem;
+        }
+        .masthead {
+          margin-bottom: 1.25rem;
         }
         h1 {
-          min-height: 1.75rem;
-          margin-bottom: 0.4rem;
-          font-size: 1rem;
-          letter-spacing: 0.05em;
+          font-size: 1.25rem;
         }
-        #theme-toggle {
-          width: 1.75rem;
-          min-width: 1.75rem;
-          height: 1.75rem;
-          font-size: 0.75rem;
+        .tagline {
+          display: none;
+        }
+        .masthead {
+          align-items: center;
+        }
+        .segmented button {
+          padding: 0.3rem 0.7rem;
+        }
+        .list > li {
+          padding: 0.75rem 1rem;
+          gap: 0.5rem;
         }
         #toolbar {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 0.4rem;
-          margin-bottom: 0.5rem;
+          grid-template-columns: 5rem 1fr 1fr;
+          margin-bottom: 1rem;
         }
-        #toolbar label[data-field]:first-child {
+        #toolbar .field:first-child {
           grid-column: 1 / -1;
         }
-        #toolbar label[data-field]:nth-child(2),
-        #toolbar button {
-          width: 100%;
-          min-width: 0;
+        .btn,
+        #query,
+        #limit {
+          height: 2.5rem;
         }
-        #toolbar label[data-field] input,
-        #toolbar label[data-field] select,
-        #toolbar button {
-          height: 2rem;
-          padding-inline: 0.5rem;
-          font-size: 0.75rem;
+        .btn {
+          padding: 0 0.75rem;
         }
         #results-card > header {
-          gap: 0.5rem;
-          padding: 0.4rem 0.5rem;
-          font-size: 0.75rem;
-        }
-        .term-dots {
-          gap: 0.25rem;
-        }
-        .term-dots span {
-          width: 0.45rem;
-          height: 0.45rem;
-        }
-        #status-line {
-          gap: 0.5rem;
+          padding: 0.75rem 1rem;
         }
         #results {
-          min-width: 42rem;
+          min-width: 40rem;
         }
         #results th,
         #results td {
-          padding: 0.22rem 0.4rem;
-          font-size: 0.72rem;
-        }
-        td.name-cell .torrent-detail {
-          font-size: 0.58rem;
-        }
-        .info-btn {
-          font-size: 0.75rem;
+          padding: 0.55rem 0.6rem;
         }
         col.c-size {
-          width: 4.5rem;
+          width: 5rem;
         }
         col.c-num {
-          width: 3rem;
-        }
-        #tg-dialog {
-          --tg-pad: var(--space-3);
-        }
-        #results th.c-num,
-        #results td.se,
-        #results td.le {
-          padding-inline: 0.2rem;
+          width: 3.5rem;
         }
         col.c-date {
-          width: 6rem;
+          width: 6.5rem;
         }
         col.c-actions {
-          width: 5.5rem;
-        }
-        #results td.actions-cell {
-          padding-inline: 0;
-        }
-        td.actions-cell a,
-        td.actions-cell button,
-        td.actions-cell > span {
-          width: 1.2rem;
-          height: 1.2rem;
-          font-size: 0.85rem;
-        }
-        #filename-tooltip {
-          max-width: calc(100vw - 1rem);
-          max-height: calc(100vh - 1rem);
-          max-height: calc(100dvh - 1rem);
-          padding: 0.4rem 0.5rem;
-          font-size: 0.6rem;
+          width: 4.5rem;
         }
         #tg-dialog {
-          padding: var(--space-3);
+          padding: 1.25rem;
         }
       }
     </style>
   </head>
-  <body data-theme="dark">
+  <body data-theme="light">
     <main class="container">
-      <h1>
-        <span>🌊</span>
-        <span>Torrent Search</span>
-        <button id="theme-toggle" class="outline" aria-label="Toggle light/dark theme" title="Toggle theme">🔆</button>
-      </h1>
+      <div class="masthead">
+        <div>
+          <h1>Torrent Search<span class="dot" aria-hidden="true"></span></h1>
+          <p class="tagline">Quiet, fast search across public trackers.</p>
+        </div>
+        <div class="masthead-actions">
+          <div class="segmented" id="view-switch" role="group" aria-label="View" hidden>
+            <button type="button" data-view="search" aria-pressed="true">Search</button>
+            <button type="button" data-view="downloads" aria-pressed="false">Downloads</button>
+          </div>
+          <button id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme"></button>
+        </div>
+      </div>
 
       <div id="toolbar">
-        <label data-field>
-          <input id="query" type="search" placeholder="Search torrents..." autocomplete="off" autofocus />
+        <label class="field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input id="query" type="search" placeholder="Search torrents" autocomplete="off" autofocus aria-label="Search query" />
         </label>
-        <label data-field>
-          <select id="limit">
+        <label class="field">
+          <select id="limit" aria-label="Number of results">
             <option value="25">25</option>
             <option value="50">50</option>
             <option value="100" selected>100</option>
             <option value="200">200</option>
           </select>
         </label>
-        <button id="btn-search" data-variant="secondary" aria-label="Search torrents">🔍 Search</button>
-        <button id="btn-popular" data-variant="secondary" aria-label="Load popular torrents">⭐ Popular</button>
+        <button id="btn-search" class="btn btn-primary" aria-label="Search torrents"><span class="label">Search</span></button>
+        <button id="btn-popular" class="btn btn-ghost" aria-label="Load popular torrents"><span class="label">Popular</span></button>
       </div>
 
-      <article class="card" id="results-card">
+      <article id="results-card" aria-busy="false">
+        <div class="progress" aria-hidden="true"></div>
         <header>
-          <div class="term-dots" aria-hidden="true"><span></span><span></span><span></span></div>
           <div id="status-line">
-            <strong id="summary">Loading...</strong>
+            <span id="summary" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span>Loading…</span>
             <small id="sort-hint"></small>
           </div>
         </header>
@@ -656,33 +1126,51 @@
             </colgroup>
             <thead>
               <tr>
-                <th class="sortable" data-key="filename">File</th>
+                <th class="sortable" data-key="filename">Name</th>
                 <th class="sortable" data-key="date">Date</th>
                 <th class="sortable" data-key="_size">Size</th>
-                <th class="sortable c-num" data-key="seeders">SE</th>
-                <th class="sortable c-num" data-key="leechers">LE</th>
-                <th>LINKS</th>
+                <th class="sortable c-num" data-key="seeders">Seed</th>
+                <th class="sortable c-num" data-key="leechers">Leech</th>
+                <th>Links</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
           </table>
         </div>
+        <div class="loading-overlay" aria-hidden="true">
+          <span class="spinner lg"></span>
+          <span id="loading-text">Loading…</span>
+        </div>
       </article>
+      <div id="downloads-view">
+        <div class="nas-banner" id="nas-banner" hidden></div>
+        <section class="panel" id="tasks-panel" hidden>
+          <header>
+            <div class="panel-head-left">
+              <h2>Download Station</h2>
+              <small id="tasks-summary"></small>
+            </div>
+            <button class="icon-btn" id="tasks-refresh" type="button" title="Refresh" aria-label="Refresh downloads"></button>
+          </header>
+          <ul class="list" id="tasks-list"></ul>
+        </section>
+        <section class="panel" id="library-panel" hidden>
+          <header>
+            <div class="panel-head-left">
+              <h2>On the NAS</h2>
+              <small id="library-summary"></small>
+            </div>
+            <button class="icon-btn" id="library-refresh" type="button" title="Refresh" aria-label="Refresh files"></button>
+          </header>
+          <ul class="list" id="library-list"></ul>
+        </section>
+      </div>
       <footer id="page-footer">
-        <span class="foot-left" title="MIT License">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3v18" />
-            <path d="m19 8 3 8a5 5 0 0 1-6 0zV7" />
-            <path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" />
-            <path d="m5 8 3 8a5 5 0 0 1-6 0zV7" />
-            <path d="M7 21h10" />
-          </svg>
-          2026 Philogicae
-        </span>
+        <span title="MIT License">MIT · 2026 Philogicae</span>
         <a href="https://github.com/philogicae/torrent-search-mcp" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub repository">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path
-              d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"
+              d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.030 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"
             />
           </svg>
         </a>
@@ -690,46 +1178,68 @@
     </main>
 
     <div id="filename-tooltip" role="tooltip" hidden></div>
+    <div id="toasts" aria-live="polite"></div>
+
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+      <div class="confirm-actions" id="confirm-actions"></div>
+    </dialog>
 
     <dialog id="tg-dialog" aria-labelledby="tg-title">
-      <div class="tg-body">
-        <h2 id="tg-title">
-          <span class="tg-badge"><img src="/static/telegram.svg" alt="" /></span>Send to Telegram
-        </h2>
-        <p class="tg-bot">
-          Message Draft for <strong>@<span id="tg-handle"></span></strong> - Confirmation.
-        </p>
-        <pre class="tg-payload" id="tg-payload"></pre>
-        <div class="tg-actions">
-          <button id="tg-open">Open in Telegram</button>
-          <button id="tg-web-btn" data-variant="secondary" title="Open the t.me page in a new tab">t.me ↗</button>
-          <span class="spacer"></span>
-          <button id="tg-close" data-variant="secondary">Close</button>
-        </div>
-        <p class="tg-hint" id="tg-hint">Telegram didn't open? The app may not be installed - use the t.me button instead.</p>
+      <h2 id="tg-title"><img src="/static/telegram.svg" alt="" />Send to Telegram</h2>
+      <p class="tg-bot">Message draft for <strong>@<span id="tg-handle"></span></strong></p>
+      <pre class="tg-payload" id="tg-payload"></pre>
+      <div class="tg-actions">
+        <button id="tg-open" class="btn btn-primary">Open in Telegram</button>
+        <button id="tg-web-btn" class="btn btn-ghost" title="Open the t.me page in a new tab">t.me ↗</button>
+        <span class="spacer"></span>
+        <button id="tg-close" class="btn btn-ghost">Close</button>
       </div>
+      <p class="tg-hint" id="tg-hint">Telegram didn't open? The app may not be installed - use the t.me button instead.</p>
     </dialog>
-    <script src="https://unpkg.com/@knadh/indexed-cache@0.4.4/dist/indexed-cache.min.js"></script>
     <script>
-      // ---- Theme (house default: dark, persisted choice wins) -----------------
-      const ic = new IndexedCache();
-      ic.init()
-        .then(() => ic.load())
-        .catch(() => {});
+      // ---- Icons --------------------------------------------------------------
+      const ICON = {
+        sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+        moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>',
+        nas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m7.5 9.5 4.5 4.5 4.5-4.5"/><rect x="3" y="17" width="18" height="4" rx="1"/><path d="M7 19h.01"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+        pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg>',
+        play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M7 4.5v15l12-7.5z"/></svg>',
+        trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+        refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>',
+        folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg>',
+        file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>',
+      };
+
+      // ---- Theme (house default: light, persisted choice wins) ----------------
       const themeBtn = document.getElementById("theme-toggle");
-      function setTheme(theme) {
+      function setTheme(theme, persist = true) {
         document.body.dataset.theme = theme;
-        try {
-          localStorage.setItem("theme", theme);
-        } catch {}
-        themeBtn.textContent = theme === "dark" ? "🔆" : "🌙";
+        if (persist) {
+          try {
+            localStorage.setItem("theme", theme);
+          } catch {}
+        }
+        themeBtn.innerHTML = theme === "dark" ? ICON.sun : ICON.moon;
       }
       let savedTheme = null;
       try {
         savedTheme = localStorage.getItem("theme");
       } catch {}
-      if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
+      if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme, false);
+      else setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light", false);
       themeBtn.onclick = () => setTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+
+      // ---- Toasts (replaces the old UI-library toast) -------------------------
+      function toast(message, variant = "info", duration = 2500) {
+        const el = document.createElement("div");
+        el.className = `toast ${variant}`;
+        el.textContent = message;
+        document.getElementById("toasts").appendChild(el);
+        setTimeout(() => el.remove(), duration);
+      }
 
       // ---- State --------------------------------------------------------------
       // The Results selector caps the overall list length for both search
@@ -748,8 +1258,11 @@
         GIB: 1024 ** 3,
         TIB: 1024 ** 4,
       };
-      const SKELETON_ROWS = 12;
+      const SKELETON_ROWS = 10;
       const TELEGRAM_BOT_HANDLE = __TELEGRAM_BOT_HANDLE__;
+      const SYNOLOGY_ENABLED = __SYNOLOGY_ENABLED__;
+      const LIBRARY_ENABLED = __LIBRARY_ENABLED__;
+      const sentToNas = new Set(); // magnets already queued this session
 
       const $ = (id) => document.getElementById(id);
 
@@ -792,9 +1305,9 @@
       }
 
       function renderSkeleton() {
-        const cols = document.querySelectorAll("#results th").length;
-        const cell = `<td><span class="skeleton line" style="display:block">&nbsp;</span></td>`;
-        $("rows").innerHTML = `<tr>${cell.repeat(cols)}</tr>`.repeat(SKELETON_ROWS);
+        const widths = ["70%", "60%", "55%", "40%", "40%", "50%"];
+        const row = widths.map((w, i) => `<td><span class="skeleton" style="width:${w};${i >= 2 ? "margin-left:auto" : ""}"></span></td>`).join("");
+        $("rows").innerHTML = `<tr>${row}</tr>`.repeat(SKELETON_ROWS);
       }
 
       function render() {
@@ -803,24 +1316,29 @@
           if (th.dataset.key === sortKey) th.dataset.dir = sortDir;
           else delete th.dataset.dir;
         });
+        if (!rows.length) {
+          $("rows").innerHTML = `<tr class="empty-row"><td colspan="6">Nothing here yet. Try another search.</td></tr>`;
+          return;
+        }
         $("rows").innerHTML = rows
           .map((r) => {
-            const magnet = r.magnet_link
-              ? `<a href="${escapeHtml(r.magnet_link)}" title="Open magnet link" aria-label="Open magnet link">🧲</a>`
-              : `<span title="No magnet link available" aria-label="No magnet link available">🚫</span>`;
-            const copy = r.magnet_link
-              ? `<button class="ghost" data-copy="${escapeHtml(r.magnet_link)}" title="Copy magnet link" aria-label="Copy magnet link">📋</button>`
-              : `<button class="ghost" title="No magnet link available" aria-label="No magnet link available" disabled>📋</button>`;
             const telegramUrl =
               r.magnet_link && TELEGRAM_BOT_HANDLE ? `https://t.me/${encodeURIComponent(TELEGRAM_BOT_HANDLE)}?text=${encodeURIComponent(`Download this torrent: ${r.magnet_link}`)}` : "";
             const telegram = TELEGRAM_BOT_HANDLE
               ? r.magnet_link
                 ? `<a href="${escapeHtml(telegramUrl)}" data-tg title="Send to Telegram" aria-label="Send to Telegram"><img src="/static/telegram.svg" alt="" /></a>`
-                : `<button class="ghost" title="No magnet link available" aria-label="No magnet link available" disabled><img src="/static/telegram.svg" alt="" /></button>`
+                : `<button title="No magnet link available" aria-label="No magnet link available" disabled><img src="/static/telegram.svg" alt="" /></button>`
               : "";
-            const info = `<button class="info-btn ghost" data-info data-filename="${escapeHtml(r.filename)}" aria-label="Show full filename" aria-expanded="false">ⓘ</button>`;
+            const nas = !SYNOLOGY_ENABLED
+              ? ""
+              : !r.magnet_link
+                ? `<button title="No magnet link available" aria-label="No magnet link available" disabled>${ICON.nas}</button>`
+                : sentToNas.has(r.magnet_link)
+                  ? `<button data-nas class="done" title="Already sent to NAS" aria-label="Already sent to NAS" disabled>${ICON.check}</button>`
+                  : `<button data-nas data-magnet="${escapeHtml(r.magnet_link)}" title="Download on NAS" aria-label="Download on NAS">${ICON.nas}</button>`;
+            const info = `<button class="info-btn" data-info data-filename="${escapeHtml(r.filename)}" aria-label="Show full filename" aria-expanded="false">i</button>`;
             const source = r.source ? `<span class="torrent-source">${escapeHtml(r.source)}</span>` : "";
-            const category = r.category ? `<span class="torrent-category">${source ? "&nbsp;-&nbsp;" : ""}${escapeHtml(r.category)}</span>` : "";
+            const category = r.category ? `<span class="torrent-category">${source ? "&nbsp;·&nbsp;" : ""}${escapeHtml(r.category)}</span>` : "";
             const detail = source || category ? `<small class="torrent-detail">${source}${category}</small>` : "";
             return `<tr>
                   <td class="name-cell">${info}<span class="filename-details"><span class="filename">${escapeHtml(r.filename)}</span>${detail}</span></td>
@@ -828,7 +1346,7 @@
                   <td class="num">${escapeHtml(r.size)}</td>
                   <td class="num se">${r.seeders}</td>
                   <td class="num le">${r.leechers}</td>
-                  <td class="actions-cell">${telegram}${magnet}${copy}</td>
+                  <td class="actions-cell">${nas}${telegram}</td>
                 </tr>`;
           })
           .join("");
@@ -836,6 +1354,11 @@
 
       function setStatus(text) {
         $("summary").textContent = text;
+      }
+
+      function setLoadingStatus(text) {
+        $("summary").innerHTML = `<span class="spinner" aria-hidden="true"></span>${escapeHtml(text)}`;
+        $("loading-text").textContent = text;
       }
 
       function showError(msg) {
@@ -851,16 +1374,24 @@
         return res.json();
       }
 
-      async function run(url, options, summaryText, activeBtn) {
+      function setBusy(busy, activeBtn) {
+        $("results-card").setAttribute("aria-busy", String(busy));
+        for (const id of ["btn-search", "btn-popular"]) $(id).disabled = busy;
+        if (busy) {
+          activeBtn.setAttribute("aria-busy", "true");
+          activeBtn.insertAdjacentHTML("afterbegin", '<span class="spinner" aria-hidden="true"></span>');
+        } else {
+          activeBtn.removeAttribute("aria-busy");
+          activeBtn.querySelector(".spinner")?.remove();
+        }
+      }
+
+      async function run(url, options, summaryText, activeBtn, loadingText) {
         $("summary").classList.remove("error-text");
+        $("sort-hint").textContent = "";
         renderSkeleton();
-        $("btn-search").disabled = true;
-        $("btn-popular").disabled = true;
-        // The clicked button's label becomes an hourglass while loading.
-        const originalLabel = activeBtn.innerHTML;
-        const originalAriaLabel = activeBtn.getAttribute("aria-label");
-        activeBtn.setAttribute("aria-label", "Loading");
-        activeBtn.textContent = "⏳";
+        setLoadingStatus(loadingText);
+        setBusy(true, activeBtn);
         try {
           const data = await fetchJson(url, options);
           rows = data;
@@ -873,29 +1404,25 @@
           $("rows").innerHTML = "";
           showError(`Request failed: ${err.message}. Is the server running?`);
         } finally {
-          activeBtn.innerHTML = originalLabel;
-          activeBtn.setAttribute("aria-label", originalAriaLabel);
-          $("btn-search").disabled = false;
-          $("btn-popular").disabled = false;
+          setBusy(false, activeBtn);
         }
       }
 
       function doSearch() {
         const q = $("query").value.trim();
         if (!q) {
-          ot.toast("Enter a query first", "Torrent Search", {
-            variant: "warning",
-          });
+          toast("Enter a query first");
+          $("query").focus();
           return;
         }
         const limit = parseInt($("limit").value, 10) || 100;
-        run(`/torrent/search?query=${encodeURIComponent(q)}&max_items=${limit}`, { method: "POST" }, `{n} results for “${q}”`, $("btn-search"));
+        run(`/torrent/search?query=${encodeURIComponent(q)}&max_items=${limit}`, { method: "POST" }, `{n} results for “${q}”`, $("btn-search"), `Searching for “${q}”…`);
       }
 
       function doPopular() {
         const limit = parseInt($("limit").value, 10) || 100;
-        run(`/torrent/popular?per_source=${limit}`, {}, "Popular Torrents", $("btn-popular")).then(() => {
-          if (rows.length) {
+        run(`/torrent/popular?per_source=${limit}`, {}, "Popular torrents", $("btn-popular"), "Loading popular torrents…").then(() => {
+          if (rows.length > limit) {
             rows = rows.slice(0, limit);
             render();
           }
@@ -905,23 +1432,12 @@
       $("btn-search").onclick = doSearch;
       $("btn-popular").onclick = doPopular;
       $("query").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") doSearch();
+        if (e.key === "Enter" && !$("btn-search").disabled) doSearch();
       });
-
-      // Freeze button widths so the loading label swap never reflows the toolbar.
-      // Measured at startup and again once webfonts settle.
-      function freezeButtonWidths() {
-        const width = $("limit").offsetWidth;
-        for (const id of ["btn-search", "btn-popular"]) {
-          $(id).style.width = `${width}px`;
-        }
-      }
-      freezeButtonWidths();
-      window.addEventListener("resize", freezeButtonWidths);
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(freezeButtonWidths);
 
       document.querySelectorAll("#results th.sortable").forEach((th) => {
         th.onclick = () => {
+          if (!rows.length) return;
           const key = th.dataset.key;
           if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
           else {
@@ -929,12 +1445,11 @@
             sortDir = "desc";
           }
           render();
-          const label = th.textContent.replace(/[↕↑↓]\s*$/, "");
-          $("sort-hint").textContent = `sorted by ${label} ${sortDir === "asc" ? "↑" : "↓"}`;
+          $("sort-hint").textContent = `Sorted by ${th.textContent.trim().toLowerCase()} ${sortDir === "asc" ? "↑" : "↓"}`;
         };
       });
 
-      // Filename tooltip toggle (ⓘ)
+      // Filename tooltip toggle (i)
       const filenameTooltip = $("filename-tooltip");
 
       function closeFilenameTooltip() {
@@ -975,34 +1490,39 @@
       document.querySelector(".table").addEventListener("scroll", closeFilenameTooltip);
       window.addEventListener("resize", closeFilenameTooltip);
 
-      // Copy-magnet (icon button, event delegation)
-      async function copyText(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(text);
-          return;
-        }
-        // Fallback for plain-HTTP (non-secure) origins
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-      }
-
+      // One-click download on the Synology NAS (Download Station).
       $("rows").addEventListener("click", async (e) => {
-        const btn = e.target.closest("button[data-copy]");
+        const btn = e.target.closest("button[data-nas]");
         if (!btn || btn.disabled) return;
+        const magnet = btn.dataset.magnet;
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>';
         try {
-          await copyText(btn.dataset.copy);
-          ot.toast("Magnet link copied", "📋", {
-            variant: "success",
-            duration: 2500,
+          const res = await fetch("/nas/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ magnet }),
           });
-        } catch {
-          ot.toast("Copy failed", "📋", { variant: "error", duration: 2500 });
+          if (!res.ok) {
+            let detail = `HTTP ${res.status}`;
+            try {
+              detail = (await res.json()).detail || detail;
+            } catch {}
+            throw new Error(detail);
+          }
+          sentToNas.add(magnet);
+          btn.classList.add("done");
+          btn.title = btn.ariaLabel = "Sent to NAS";
+          btn.innerHTML = ICON.check;
+          toast("Added to Download Station");
+          tasksLoaded && loadTasks({ quiet: true });
+        } catch (err) {
+          btn.disabled = false;
+          btn.innerHTML = ICON.nas;
+          toast(`NAS: ${err.message}`, "error", 5000);
+        } finally {
+          btn.removeAttribute("aria-busy");
         }
       });
 
@@ -1052,6 +1572,275 @@
         if (e.target === tgDialog) tgDialog.close();
       });
       tgDialog.addEventListener("close", () => clearTimeout(tgTimer));
+
+      // ---- Confirm dialog (in-page, never window.confirm) -------------------
+      const confirmDialog = $("confirm-dialog");
+      function askConfirm(title, text, choices) {
+        // choices: [{label, value, variant}] - resolves with value, or null.
+        return new Promise((resolve) => {
+          $("confirm-title").textContent = title;
+          $("confirm-text").textContent = text;
+          const actions = $("confirm-actions");
+          actions.innerHTML = "";
+          const all = [{ label: "Cancel", value: null, variant: "ghost" }, ...choices];
+          for (const c of all) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = `btn btn-${c.variant || "primary"}`;
+            b.textContent = c.label;
+            b.onclick = () => {
+              confirmDialog.close();
+              resolve(c.value);
+            };
+            actions.appendChild(b);
+          }
+          confirmDialog.onclose = () => resolve(null);
+          confirmDialog.showModal();
+          actions.lastElementChild.focus();
+        });
+      }
+      confirmDialog.addEventListener("click", (e) => {
+        if (e.target === confirmDialog) confirmDialog.close();
+      });
+
+      // ---- Downloads view ----------------------------------------------------
+      const STATUS_LABEL = {
+        waiting: "Waiting",
+        downloading: "Downloading",
+        paused: "Paused",
+        finishing: "Finishing",
+        finished: "Finished",
+        hash_checking: "Checking",
+        seeding: "Seeding",
+        extracting: "Extracting",
+        error: "Error",
+        filehosting_waiting: "Waiting",
+      };
+      const PAUSABLE = new Set(["waiting", "downloading", "seeding", "hash_checking", "finishing"]);
+
+      function fmtBytes(n) {
+        if (!n) return "0 B";
+        const u = ["B", "KB", "MB", "GB", "TB"];
+        const i = Math.min(u.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+        return `${(n / 1024 ** i).toFixed(i >= 3 ? 2 : i ? 1 : 0)} ${u[i]}`;
+      }
+      function fmtDate(sec) {
+        return sec ? new Date(sec * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+      }
+
+      async function api(url, options) {
+        const res = await fetch(url, { cache: "no-store", ...options });
+        let body = null;
+        try {
+          body = await res.json();
+        } catch {}
+        if (!res.ok) throw new Error((body && body.detail) || `HTTP ${res.status}`);
+        return body;
+      }
+
+      function loadingRow(text) {
+        return `<li class="loading-row"><span class="spinner" aria-hidden="true"></span>${escapeHtml(text)}</li>`;
+      }
+      function setRefreshing(btnId, busy) {
+        const b = $(btnId);
+        b.disabled = busy;
+        b.innerHTML = busy ? '<span class="spinner" aria-hidden="true"></span>' : ICON.refresh;
+      }
+
+      let tasks = [];
+      let tasksLoaded = false;
+      async function loadTasks({ quiet = false } = {}) {
+        if (!SYNOLOGY_ENABLED) return;
+        if (!tasksLoaded && !quiet) $("tasks-list").innerHTML = loadingRow("Loading downloads…");
+        setRefreshing("tasks-refresh", true);
+        try {
+          tasks = await api("/nas/tasks");
+          tasksLoaded = true;
+          $("nas-banner").hidden = true;
+          renderTasks();
+        } catch (err) {
+          $("nas-banner").hidden = false;
+          $("nas-banner").textContent = `Can't load Download Station: ${err.message}`;
+          if (!tasksLoaded) $("tasks-list").innerHTML = `<li class="empty">Download Station is unavailable.</li>`;
+        } finally {
+          setRefreshing("tasks-refresh", false);
+        }
+      }
+
+      function renderTasks() {
+        const active = tasks.filter((t) => t.status === "downloading").length;
+        const seeding = tasks.filter((t) => t.status === "seeding").length;
+        $("tasks-summary").textContent = tasks.length ? [`${tasks.length} total`, active && `${active} downloading`, seeding && `${seeding} seeding`].filter(Boolean).join(" · ") : "";
+        if (!tasks.length) {
+          $("tasks-list").innerHTML = `<li class="empty">No downloads yet. Use the download button on a search result.</li>`;
+          return;
+        }
+        const sorted = [...tasks].sort((a, b) => b.created - a.created);
+        $("tasks-list").innerHTML = sorted
+          .map((t) => {
+            const pct = t.size ? Math.min(100, (t.downloaded / t.size) * 100) : 0;
+            const done = ["finished", "seeding"].includes(t.status) || pct >= 100;
+            const label = STATUS_LABEL[t.status] || t.status;
+            const meta = [
+              t.size ? `${fmtBytes(t.downloaded)} of ${fmtBytes(t.size)}${done ? "" : ` · ${pct.toFixed(1)}%`}` : "Fetching torrent details…",
+              t.status === "downloading" && `↓ ${fmtBytes(t.speed_down)}/s`,
+              (t.status === "downloading" || t.status === "seeding") && t.speed_up && `↑ ${fmtBytes(t.speed_up)}/s`,
+              t.destination && `→ ${t.destination}`,
+            ]
+              .filter(Boolean)
+              .map((m) => `<span>${escapeHtml(m)}</span>`)
+              .join("");
+            const toggle = PAUSABLE.has(t.status)
+              ? `<button class="icon-btn" data-task-action="pause" data-id="${escapeHtml(t.id)}" title="Pause" aria-label="Pause">${ICON.pause}</button>`
+              : t.status === "paused" || t.status === "error"
+                ? `<button class="icon-btn" data-task-action="resume" data-id="${escapeHtml(t.id)}" title="Resume" aria-label="Resume">${ICON.play}</button>`
+                : "";
+            return `<li>
+                <div class="item-main">
+                  <div class="item-title"><span class="pill ${escapeHtml(t.status)}">${escapeHtml(label)}</span><span title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</span></div>
+                  <div class="meter${done ? " done" : ""}"><span style="width:${done ? 100 : pct}%"></span></div>
+                  <div class="item-meta">${meta}</div>
+                </div>
+                <div class="item-actions">${toggle}<button class="icon-btn danger" data-task-action="remove" data-id="${escapeHtml(t.id)}" title="Remove" aria-label="Remove">${ICON.trash}</button></div>
+              </li>`;
+          })
+          .join("");
+      }
+
+      $("tasks-list").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-task-action]");
+        if (!btn || btn.disabled) return;
+        const id = btn.dataset.id;
+        const action = btn.dataset.taskAction;
+        const task = tasks.find((t) => t.id === id);
+        let url = `/nas/tasks/${encodeURIComponent(id)}/${action}`;
+        let options = { method: "POST" };
+        let okMsg = action === "pause" ? "Paused" : "Resumed";
+        if (action === "remove") {
+          const choices = [{ label: "Remove from list", value: "keep", variant: "ghost" }];
+          if (LIBRARY_ENABLED) choices.push({ label: "Remove and delete files", value: "delete", variant: "danger" });
+          const choice = await askConfirm(
+            "Remove download?",
+            LIBRARY_ENABLED
+              ? `“${task ? task.title : id}”. Removing stops the download or seeding. Deleting files also erases it from the NAS permanently; it does not go to the recycle bin.`
+              : `“${task ? task.title : id}”. This stops the download or seeding. Downloaded files stay on the NAS.`,
+            choices,
+          );
+          if (!choice) return;
+          url = `/nas/tasks/${encodeURIComponent(id)}${choice === "delete" ? "?delete_files=true" : ""}`;
+          options = { method: "DELETE" };
+          okMsg = choice === "delete" ? "Download and files deleted" : "Removed from Download Station";
+        }
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>';
+        try {
+          const res = await api(url, options);
+          if (action === "remove" && url.includes("delete_files") && res && res.files_deleted === false) okMsg = "Removed; no files were found to delete";
+          toast(okMsg);
+          await Promise.all([loadTasks({ quiet: true }), action === "remove" ? loadLibrary({ quiet: true }) : null]);
+        } catch (err) {
+          btn.disabled = false;
+          btn.innerHTML = original;
+          toast(err.message, "error", 5000);
+        }
+      });
+
+      let libraryItems = [];
+      let libraryLoaded = false;
+      async function loadLibrary({ quiet = false } = {}) {
+        if (!LIBRARY_ENABLED) return;
+        if (!libraryLoaded && !quiet) $("library-list").innerHTML = loadingRow("Reading the download folder…");
+        setRefreshing("library-refresh", true);
+        try {
+          libraryItems = await api("/library");
+          libraryLoaded = true;
+          renderLibrary();
+        } catch (err) {
+          $("library-list").innerHTML = `<li class="empty">${escapeHtml(err.message)}</li>`;
+        } finally {
+          setRefreshing("library-refresh", false);
+        }
+      }
+
+      function renderLibrary() {
+        const total = libraryItems.reduce((n, i) => n + i.size, 0);
+        $("library-summary").textContent = libraryItems.length ? `${libraryItems.length} items · ${fmtBytes(total)}` : "";
+        if (!libraryItems.length) {
+          $("library-list").innerHTML = `<li class="empty">The download folder is empty.</li>`;
+          return;
+        }
+        $("library-list").innerHTML = libraryItems
+          .map(
+            (i) => `<li>
+              <div class="item-main">
+                <div class="item-title">${i.is_dir ? ICON.folder : ICON.file}<span title="${escapeHtml(i.name)}">${escapeHtml(i.name)}</span></div>
+                <div class="item-meta"><span>${fmtBytes(i.size)}</span><span>${fmtDate(i.modified)}</span></div>
+              </div>
+              <div class="item-actions"><button class="icon-btn danger" data-delete-file="${escapeHtml(i.name)}" title="Delete from NAS" aria-label="Delete from NAS">${ICON.trash}</button></div>
+            </li>`,
+          )
+          .join("");
+      }
+
+      $("library-list").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-delete-file]");
+        if (!btn || btn.disabled) return;
+        const name = btn.dataset.deleteFile;
+        const seeding = tasks.find((t) => t.title === name && PAUSABLE.has(t.status));
+        const choice = await askConfirm(
+          "Delete from the NAS?",
+          `“${name}” will be erased permanently; it does not go to the recycle bin.${seeding ? " Its torrent is still active in Download Station, so remove the download there instead to stop it cleanly." : ""}`,
+          [{ label: "Delete permanently", value: "delete", variant: "danger" }],
+        );
+        if (!choice) return;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>';
+        try {
+          await api(`/library/${encodeURIComponent(name)}`, { method: "DELETE" });
+          toast("Deleted from the NAS");
+          await loadLibrary({ quiet: true });
+        } catch (err) {
+          btn.disabled = false;
+          btn.innerHTML = ICON.trash;
+          toast(err.message, "error", 5000);
+        }
+      });
+
+      $("tasks-refresh").onclick = () => loadTasks();
+      $("library-refresh").onclick = () => loadLibrary();
+
+      // ---- View switching + live refresh of tasks ----------------------------
+      let pollTimer = null;
+      function setView(view) {
+        document.body.dataset.view = view;
+        document.querySelectorAll("#view-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
+        clearInterval(pollTimer);
+        pollTimer = null;
+        if (view === "downloads") {
+          loadTasks();
+          loadLibrary();
+          if (SYNOLOGY_ENABLED)
+            pollTimer = setInterval(() => {
+              if (!document.hidden) loadTasks({ quiet: true });
+            }, 5000);
+        }
+        try {
+          localStorage.setItem("view", view);
+        } catch {}
+      }
+      if (SYNOLOGY_ENABLED || LIBRARY_ENABLED) {
+        $("view-switch").hidden = false;
+        $("tasks-panel").hidden = !SYNOLOGY_ENABLED;
+        $("library-panel").hidden = !LIBRARY_ENABLED;
+        $("tasks-refresh").innerHTML = ICON.refresh;
+        $("library-refresh").innerHTML = ICON.refresh;
+        $("view-switch").addEventListener("click", (e) => {
+          const b = e.target.closest("button[data-view]");
+          if (b) setView(b.dataset.view);
+        });
+      }
+      document.body.dataset.view = "search";
 
       // Load the popular listings on first visit so the page is never empty.
       window.addEventListener("DOMContentLoaded", doPopular);
