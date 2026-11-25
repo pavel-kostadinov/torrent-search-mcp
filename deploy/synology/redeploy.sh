@@ -35,9 +35,9 @@ scp -O -q "$TAR" deploy/synology/compose.yaml "$ENV_FILE" "$NAS_SSH:$NAS_DIR/"
 
 echo "==> Loading the image and restarting (the NAS asks for your password for sudo)"
 ssh -t "$NAS_SSH" "cd '$NAS_DIR' && chmod 600 .env \
-  && sudo docker load -i '$(basename "$TAR")' \
-  && sudo docker compose -p torrent-search up -d --force-recreate \
-  && sudo docker image prune -f >/dev/null"
+  && sudo /usr/local/bin/docker load -i '$(basename "$TAR")' \
+  && sudo /usr/local/bin/docker compose -p torrent-search up -d --force-recreate \
+  && sudo /usr/local/bin/docker image prune -f >/dev/null"
 
 URL="http://${NAS_SSH#*@}:${WEB_PORT:-8000}"
 echo "==> Waiting for $URL"
